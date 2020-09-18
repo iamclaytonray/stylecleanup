@@ -64,7 +64,7 @@ const processFile = (file, cmd) => {
   const { sheets, lines } = analyzeFile(file);
 
   if (!sheets.length) {
-    return { removed: 0, skipped: [] };
+    return { removed: 0, skipped: [], hasIssue: [] };
   }
 
   if (cmd === 'check') {
@@ -73,7 +73,14 @@ const processFile = (file, cmd) => {
       sheets.forEach(showSheet);
       console.log('\n');
     }
-    return { removed: 0, skipped: [] };
+
+    return {
+      removed: 0,
+      skipped: [],
+      hasIssue: sheets.filter(
+        (sheet) => sheet.missing.length || sheet.unused.length,
+      ),
+    };
   } else {
     const toRemove = [];
     let skipped = 0;
@@ -90,23 +97,27 @@ const processFile = (file, cmd) => {
     });
 
     if (skipped === 0 && !toRemove.length) {
-      return { removed: 0, skipped: [] };
+      return { removed: 0, skipped: [], hasIssue: [] };
     }
 
     console.log(chalk.bold.blue('File: ' + file));
+
     if (skipped > 0) {
       console.log(
         `Not removing ${skipped} potentially unused styles - use 'check' to view warnings or use 'fix-force'`,
       );
     }
+
     if (toRemove.length) {
       const fixed = removeUnused(lines, toRemove);
       fs.writeFileSync(file, fixed.join('\n'));
       console.log(`Removed ${toRemove.length} unused styles`);
     }
+
     return {
       removed: toRemove.length,
       skipped: skipped > 0 ? [{ file, count: skipped }] : [],
+      hasIssue: [],
     };
   }
 };

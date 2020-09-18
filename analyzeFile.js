@@ -4,8 +4,6 @@ const traverse = require('@babel/traverse').default;
 const fs = require('fs');
 
 const isStyleSheetCreate = (path) => {
-  // TODO could potentially check that this was imported from aphrodite, but
-  // maybe no need?
   return (
     path.node.callee.type === 'MemberExpression' &&
     path.node.callee.object.type === 'Identifier' &&
@@ -51,7 +49,8 @@ module.exports = (file) => {
     CallExpression(path) {
       if (isStyleSheetCreate(path)) {
         const members = path.node.arguments[0].properties.filter(
-          (property) => property.type === 'ObjectProperty', // Not gonna try to figure out spreads
+          // Not gonna try to figure out spreads
+          (property) => property.type === 'ObjectProperty',
         );
         const keys = {};
         members.forEach((m) => (keys[getName(m.key)] = m));
@@ -93,6 +92,7 @@ module.exports = (file) => {
           return ref.parent;
         })
         .filter((x) => x);
+
       const refNames = referenced.map((ref) => ref.property.name);
 
       const unused = keyNames
@@ -103,8 +103,10 @@ module.exports = (file) => {
           loc: keys[k].loc,
           code: locLines(lines, keys[k].loc),
         }));
+
       const missing = referenced
         .filter((r) => keyNames.indexOf(r.property.name) === -1)
+        .filter((r) => !hasIgnore(lines, r.loc))
         .filter((r) => !hasIgnore(lines, r.loc))
         .map((r) => ({
           key: r.property.name,

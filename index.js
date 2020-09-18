@@ -55,6 +55,16 @@ console.log(`Checking ${allfiles.length} files matching ${files.join(' ')}`);
 const results = allfiles.map((file) => processFile(file, cmd));
 const removed = results.map((r) => r.removed).reduce(add, 0);
 
+const actual = results.filter((node) => node.hasIssue.length > 0).length > 0;
+
+if (cmd === 'check') {
+  if (actual) {
+    return process.exit(1);
+  } else {
+    return process.exit(0);
+  }
+}
+
 if (cmd !== 'check') {
   console.log();
   console.log(`Removed ${removed} unused styles`);
